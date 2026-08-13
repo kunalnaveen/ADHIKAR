@@ -1,0 +1,89 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "language": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "familyTrees": {
+      "title": "Family Tree",
+      "description": "User saved family trees",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "members": { "type": "array" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["title"]
+    },
+    "inheritanceReports": {
+      "title": "Inheritance Report",
+      "description": "Saved inheritance calculation report",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "decedentName": { "type": "string" },
+        "personalLaw": { "type": "string" },
+        "totalAssetValue": { "type": "number" },
+        "shares": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title"]
+    },
+    "generatedDocuments": {
+      "title": "Generated Legal Document",
+      "description": "Saved generated legal documents and affidavits",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "docType": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "docType"]
+    },
+    "riskAssessments": {
+      "title": "Dispute Risk Assessment",
+      "description": "Saved dispute risk radar assessments",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "score": { "type": "number" },
+        "riskLevel": { "type": "string" },
+        "details": { "type": "object" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["score", "riskLevel"]
+    },
+    "peaceScores": {
+      "title": "Family Peace Score",
+      "description": "Saved Family Peace Scores and virtual courtroom simulation logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "peaceScore": { "type": "number" },
+        "litigationYears": { "type": "number" },
+        "estimatedCost": { "type": "string" },
+        "recommendations": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["peaceScore"]
+    }
+  }
+}

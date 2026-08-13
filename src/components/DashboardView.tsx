@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppSettings } from '../types';
 import { translations } from '../data/translations';
+import { t as translateText } from '../utils/translate';
 import { legalAlertsList } from '../data/mockData';
 import { 
   Bot, 
@@ -26,7 +27,12 @@ import {
   CheckCircle2,
   Clock,
   TrendingUp,
-  ShieldAlert
+  ShieldAlert,
+  Globe,
+  Languages,
+  Sprout,
+  WifiOff,
+  Accessibility
 } from 'lucide-react';
 import { SecureDocumentVault } from './SecureDocumentVault';
 import { PropertyOwnershipMap } from './PropertyOwnershipMap';
@@ -41,10 +47,52 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settings }) => {
   const t = translations[settings.language] || translations.EN;
+  const tr = (str: string) => translateText(str, settings.language);
 
   return (
     <div className="flex flex-col w-full gap-6 px-4 md:px-8 max-w-7xl mx-auto pt-6 pb-28 text-slate-100">
       
+      {/* Banner 1: Built for India's next billion users */}
+      <div className="relative w-full rounded-3xl p-5 md:p-6 bg-slate-900 border border-emerald-500/30 shadow-xl overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+            <Globe className="w-6 h-6 text-emerald-400" />
+          </div>
+          <div>
+            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 uppercase tracking-wider">
+              {tr("Accessibility & Inclusion")}
+            </span>
+            <h2 className="text-xl md:text-2xl font-extrabold text-white font-serif mt-1">
+              {tr("Built for India's next billion users.")}
+            </h2>
+          </div>
+        </div>
+
+        {/* 5 Feature Pills */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-slate-200 flex items-center gap-1.5">
+            <Mic className="w-3.5 h-3.5 text-amber-400" />
+            {tr("Voice-first")}
+          </span>
+          <span className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-slate-200 flex items-center gap-1.5">
+            <Languages className="w-3.5 h-3.5 text-indigo-400" />
+            {tr("Multilingual")}
+          </span>
+          <span className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-slate-200 flex items-center gap-1.5">
+            <Sprout className="w-3.5 h-3.5 text-emerald-400" />
+            {tr("Rural-friendly")}
+          </span>
+          <span className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-slate-200 flex items-center gap-1.5">
+            <WifiOff className="w-3.5 h-3.5 text-cyan-400" />
+            {tr("Offline-capable")}
+          </span>
+          <span className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-slate-200 flex items-center gap-1.5">
+            <Accessibility className="w-3.5 h-3.5 text-rose-400" />
+            {tr("Senior-friendly")}
+          </span>
+        </div>
+      </div>
+
       {/* Homepage Banner: Dispute Prevention & Live Metrics */}
       <div className="relative w-full rounded-3xl p-6 md:p-8 bg-gradient-to-r from-slate-900 via-indigo-950/80 to-slate-900 border-2 border-indigo-500/40 shadow-2xl overflow-hidden space-y-6">
         
@@ -55,15 +103,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
         <div className="relative z-10 space-y-3 max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-bold">
             <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-            <span>National Preventive Legal Impact Mission</span>
+            <span>{tr("National Preventive Legal Impact Mission")}</span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white font-serif tracking-tight leading-tight">
-            Prevent tomorrow's property dispute today.
+            {tr("Prevent tomorrow's property dispute today.")}
           </h1>
 
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            In India, millions of families face decades of costly courtroom litigation simply because property ownership, wills, and statutory succession rights were left unrecorded. ADHIKAR protects your family legacy before disputes arise.
+            {tr("In India, millions of families face decades of costly courtroom litigation simply because property ownership, wills, and statutory succession rights were left unrecorded. ADHIKAR protects your family legacy before disputes arise.")}
           </p>
         </div>
 
@@ -73,28 +121,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
           <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1 backdrop-blur-md">
             <div className="flex items-center gap-2 text-rose-400">
               <TrendingUp className="w-4 h-4" />
-              <span className="text-[10px] font-bold uppercase tracking-wider">Judicial Backlog</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider">{tr("Judicial Backlog")}</span>
             </div>
             <div className="text-2xl md:text-3xl font-black font-mono text-white">55.8M+</div>
-            <p className="text-[11px] text-slate-400">Pending Cases in Indian Courts</p>
+            <p className="text-[11px] text-slate-400">{tr("Pending Cases in Indian Courts")}</p>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1 backdrop-blur-md">
             <div className="flex items-center gap-2 text-amber-400">
               <AlertTriangle className="w-4 h-4" />
-              <span className="text-[10px] font-bold uppercase tracking-wider">Unprotected Estates</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider">{tr("Unprotected Estates")}</span>
             </div>
             <div className="text-2xl md:text-3xl font-black font-mono text-amber-400">84%</div>
-            <p className="text-[11px] text-slate-400">Families Have No Registered Will</p>
+            <p className="text-[11px] text-slate-400">{tr("Families Have No Registered Will")}</p>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1 backdrop-blur-md">
             <div className="flex items-center gap-2 text-cyan-400">
               <Clock className="w-4 h-4" />
-              <span className="text-[10px] font-bold uppercase tracking-wider">Litigation Duration</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider">{tr("Litigation Duration")}</span>
             </div>
             <div className="text-2xl md:text-3xl font-black font-mono text-cyan-300">~20 Years</div>
-            <p className="text-[11px] text-slate-400">Average Property Dispute Timeline</p>
+            <p className="text-[11px] text-slate-400">{tr("Average Property Dispute Timeline")}</p>
           </div>
 
         </div>
@@ -108,7 +156,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
           >
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Check Inheritance Rights</span>
+              <span>{tr("Check Inheritance Rights")}</span>
             </div>
             <ArrowRight className="w-3.5 h-3.5 opacity-60 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
           </button>
@@ -119,7 +167,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
           >
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Generate Legal Documents</span>
+              <span>{tr("Generate Legal Documents")}</span>
             </div>
             <ArrowRight className="w-3.5 h-3.5 opacity-60 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
           </button>
@@ -130,7 +178,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
           >
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Understand Succession Laws</span>
+              <span>{tr("Understand Succession Laws")}</span>
             </div>
             <ArrowRight className="w-3.5 h-3.5 opacity-60 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
           </button>
@@ -141,7 +189,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
           >
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Prevent Family Disputes</span>
+              <span>{tr("Prevent Family Disputes")}</span>
             </div>
             <ArrowRight className="w-3.5 h-3.5 opacity-60 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
           </button>
@@ -186,7 +234,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
               className="bg-slate-950/80 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-xs uppercase tracking-wider px-5 py-3.5 rounded-xl flex items-center gap-2 shadow-md active:scale-95 transition-all"
             >
               <AlertTriangle className="w-4 h-4 text-rose-400" />
-              <span>Risk Radar Engine</span>
+              <span>{tr("Dispute Risk Radar")}</span>
             </button>
           </div>
         </div>
@@ -197,7 +245,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-indigo-400" />
-            <h2 className="text-lg font-bold text-white tracking-tight">AI Enhancement Modules</h2>
+            <h2 className="text-lg font-bold text-white tracking-tight">{tr("AI Enhancement Modules")}</h2>
           </div>
           <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20">
             5 New Engines Active
@@ -216,19 +264,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
                 <Gavel className="w-5 h-5 text-amber-400" />
               </div>
               <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                Virtual Courtroom
+                {tr("Virtual Courtroom")}
               </span>
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">AI Virtual Judge & Time Machine</h3>
+              <h3 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">{tr("Virtual Courtroom")}</h3>
               <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                 Simulate court rulings, 15-year dispute timeline projections, rural SMS mode & family peace score.
               </p>
             </div>
 
             <div className="flex items-center justify-between text-xs font-bold text-amber-400 pt-2 border-t border-slate-800/80 w-full">
-              <span>Open Virtual Courtroom</span>
+              <span>{tr("Virtual Courtroom")}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
@@ -248,14 +296,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-rose-300 transition-colors">Dispute Risk Radar</h3>
+              <h3 className="text-sm font-bold text-white group-hover:text-rose-300 transition-colors">{tr("Dispute Risk Radar")}</h3>
               <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                 Predict future legal dispute probability (0-100) using family complexity & land title parameters.
               </p>
             </div>
 
             <div className="flex items-center justify-between text-xs font-bold text-rose-400 pt-2 border-t border-slate-800/80 w-full">
-              <span>Launch Radar Engine</span>
+              <span>{tr("Dispute Risk Radar")}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
@@ -275,14 +323,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors">"What Happens If?" Simulator</h3>
+              <h3 className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors">{tr("Inheritance Digital Twin")}</h3>
               <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                 Simulate birth, marriage, adoption, and property sale events with instant share recalculation.
               </p>
             </div>
 
             <div className="flex items-center justify-between text-xs font-bold text-indigo-400 pt-2 border-t border-slate-800/80 w-full">
-              <span>Run Scenario Simulator</span>
+              <span>{tr("Inheritance Digital Twin")}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
@@ -302,14 +350,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors">Inheritance Health Score</h3>
+              <h3 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors">{tr("Inheritance Health Score")}</h3>
               <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                 Composite 0-100 readiness index evaluating Wills, property deeds, and family documentation.
               </p>
             </div>
 
             <div className="flex items-center justify-between text-xs font-bold text-emerald-400 pt-2 border-t border-slate-800/80 w-full">
-              <span>View Audit Breakdown</span>
+              <span>{tr("Inheritance Health Score")}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
@@ -329,14 +377,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">Family Legacy Timeline</h3>
+              <h3 className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">{tr("Family Legacy Timeline")}</h3>
               <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                 Interactive multi-generational timeline tracking asset transfers from grandparents down to children.
               </p>
             </div>
 
             <div className="flex items-center justify-between text-xs font-bold text-purple-400 pt-2 border-t border-slate-800/80 w-full">
-              <span>Explore Generational Graph</span>
+              <span>{tr("Family Legacy Timeline")}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
@@ -356,14 +404,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">Legal Readiness Checkup</h3>
+              <h3 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">{tr("Legal Readiness Checkup")}</h3>
               <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                 Guided checklist verifying Wills, Jamabandi revenue cards, nominees, and identity proofs.
               </p>
             </div>
 
             <div className="flex items-center justify-between text-xs font-bold text-amber-400 pt-2 border-t border-slate-800/80 w-full">
-              <span>Start Legal Checklist</span>
+              <span>{tr("Legal Readiness Checkup")}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
@@ -383,14 +431,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-indigo-200 transition-colors">Women's Rights Insight Center</h3>
+              <h3 className="text-sm font-bold text-white group-hover:text-indigo-200 transition-colors">{tr("Women's Rights Center")}</h3>
               <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                 Equal coparcenary rights for daughters, widows, and mothers under HSA 2005 & Vineeta Sharma judgment.
               </p>
             </div>
 
             <div className="flex items-center justify-between text-xs font-bold text-indigo-300 pt-2 border-t border-slate-800/80 w-full">
-              <span>Open Rights Center</span>
+              <span>{tr("Women's Rights Center")}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
@@ -433,7 +481,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, settin
       <div>
         <div className="flex items-center gap-2 mb-4">
           <FolderLock className="w-5 h-5 text-emerald-400" />
-          <h2 className="text-lg font-bold text-white tracking-tight">Legal Document Vault & Deadline Calendar</h2>
+          <h2 className="text-lg font-bold text-white tracking-tight">{tr("Legal Document Vault & Deadline Calendar")}</h2>
         </div>
         <SecureDocumentVault settings={settings} />
       </div>

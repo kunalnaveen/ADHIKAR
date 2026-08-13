@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Language, AppSettings, UserProfile } from '../types';
 import { translations } from '../data/translations';
+import { t as translateText } from '../utils/translate';
 import { 
   Globe, 
   User as UserIcon, 
@@ -15,7 +16,8 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Mic
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -28,6 +30,7 @@ interface HeaderProps {
   onNavigate: (view: string) => void;
   onUpdateSettings: (newSettings: Partial<AppSettings>) => void;
   onOpenAuth: () => void;
+  onOpenVoiceModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -40,6 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   onUpdateSettings,
   onOpenAuth,
+  onOpenVoiceModal,
 }) => {
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [syncMenuOpen, setSyncMenuOpen] = useState(false);
@@ -64,21 +68,21 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   const viewTitles: Record<string, string> = {
-    dashboard: 'Dashboard',
-    tree: 'Network',
-    calculator: 'Calculator',
-    interview: 'Ai Interview',
-    womensRights: 'Women\'s Rights',
-    storage: 'Storage & Offline',
-    senior: 'Senior Mode',
-    radar: 'Dispute Risk Radar',
-    simulator: 'What Happens If? Simulator',
-    health: 'Inheritance Health Score',
-    timeline: 'Family Legacy Timeline',
-    checkup: 'Legal Readiness Checkup',
+    dashboard: translateText('Dashboard', settings.language),
+    tree: translateText('NETWORK', settings.language),
+    calculator: translateText('CALC', settings.language),
+    interview: translateText('ASSIST', settings.language),
+    womensRights: translateText("WOMEN'S RIGHTS", settings.language),
+    storage: translateText('STORAGE', settings.language),
+    senior: translateText('Senior Mode', settings.language),
+    radar: translateText('Dispute Risk Radar', settings.language),
+    simulator: translateText('What Happens If?', settings.language),
+    health: translateText('Inheritance Health Score', settings.language),
+    timeline: translateText('Family Legacy Timeline', settings.language),
+    checkup: translateText('Legal Readiness Checkup', settings.language),
   };
 
-  const currentTitle = viewTitles[currentView] || 'ADHIKAR';
+  const currentTitle = viewTitles[currentView] || t.appName;
 
   return (
     <header className={`fixed top-0 w-full z-50 transition-colors duration-200 ${
@@ -129,6 +133,18 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+
+          {/* Gemini Live Voice One-Click Mic Button */}
+          {onOpenVoiceModal && (
+            <button
+              onClick={onOpenVoiceModal}
+              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-500/20 border border-indigo-400/40 active:scale-95 transition-all"
+              title="Open Gemini Live Voice Assistant"
+            >
+              <Mic className="w-4 h-4 text-emerald-300 animate-pulse" />
+              <span className="hidden sm:inline">Voice AI</span>
+            </button>
+          )}
 
           {/* Prominent Visual Sync-Status Indicator (3 States) */}
           <div className="relative">

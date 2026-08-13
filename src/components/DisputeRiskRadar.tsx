@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DisputeRiskAnalysis, RiskFactor, AppSettings } from '../types';
+import { DisputeRiskAnalysis, RiskFactor, AppSettings, UserProfile } from '../types';
 import { 
   AlertTriangle, 
   ShieldCheck, 
@@ -14,15 +14,55 @@ import {
   TrendingUp, 
   Zap,
   ArrowRight,
-  RotateCcw
+  RotateCcw,
+  Cloud,
+  Check,
+  Loader2
 } from 'lucide-react';
+import { saveRiskAssessmentToFirestore } from '../lib/firebase';
 
 interface DisputeRiskRadarProps {
   settings: AppSettings;
   onNavigate?: (view: string) => void;
+  user?: UserProfile | null;
+  onOpenAuth?: () => void;
 }
 
-export const DisputeRiskRadar: React.FC<DisputeRiskRadarProps> = ({ settings, onNavigate }) => {
+export const DisputeRiskRadar: React.FC<DisputeRiskRadarProps> = ({ settings, onNavigate, user, onOpenAuth }) => {
+  const [savingRisk, setSavingRisk] = useState(false);
+  const [riskSaved, setRiskSaved] = useState(false);
+
+  const handleSaveRiskToCloud = async () => {
+    if (!user) {
+      onOpenAuth?.();
+      return;
+    }
+    setSavingRisk(true);
+    try {
+      await saveRiskAssessmentToFirestore(user.id, {
+        title: `Risk Radar Assessment (${riskData.riskScore}/100)`,
+        score: riskData.riskScore,
+        riskLevel: riskData.riskTier,
+        details: {
+          factorsCount: riskData.factors.length,
+          missingWill,
+          ancestralProperty,
+          documentationGaps,
+          conflictingClaims,
+          secondMarriage,
+          adoptionCases,
+          propertyAmbiguity,
+          familyComplexityScore,
+        }
+      });
+      setRiskSaved(true);
+      setTimeout(() => setRiskSaved(false), 3000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingRisk(false);
+    }
+  };
   // Risk Factor Toggle Inputs
   const [missingWill, setMissingWill] = useState<boolean>(true);
   const [multipleHeirs, setMultipleHeirs] = useState<boolean>(true);
@@ -195,22 +235,43 @@ export const DisputeRiskRadar: React.FC<DisputeRiskRadarProps> = ({ settings, on
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setMissingWill(false);
-            setAncestralProperty(false);
-            setDocumentationGaps(false);
-            setConflictingClaims(false);
-            setSecondMarriage(false);
-            setAdoptionCases(false);
-            setPropertyAmbiguity(false);
-            setFamilyComplexityScore(1);
-          }}
-          className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs font-bold flex items-center gap-1.5 shrink-0"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>Reset Parameters</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleSaveRiskToCloud}
+            disabled={savingRisk}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all shadow-md ${
+              riskSaved
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                : 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border-indigo-500/40'
+            }`}
+          >
+            {savingRisk ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+            ) : riskSaved ? (
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+            ) : (
+              <Cloud className="w-3.5 h-3.5 text-indigo-400" />
+            )}
+            <span>{riskSaved ? 'Saved to Cloud' : 'Save Assessment'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setMissingWill(false);
+              setAncestralProperty(false);
+              setDocumentationGaps(false);
+              setConflictingClaims(false);
+              setSecondMarriage(false);
+              setAdoptionCases(false);
+              setPropertyAmbiguity(false);
+              setFamilyComplexityScore(1);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs font-bold flex items-center gap-1.5"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset</span>
+          </button>
+        </div>
       </div>
 
       {/* Grid Layout: Gauge Meter + Heatmap & Breakdown */}

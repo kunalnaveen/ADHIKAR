@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppSettings } from '../types';
+import { AppSettings, Language } from '../types';
 import { translations } from '../data/translations';
 import { 
   Accessibility, 
@@ -19,19 +19,23 @@ import {
   Check, 
   Sparkles,
   Phone,
-  X
+  X,
+  Mic,
+  Globe
 } from 'lucide-react';
 
 interface SeniorModeViewProps {
   onNavigate: (view: string) => void;
   settings: AppSettings;
   onUpdateSettings?: (newSettings: Partial<AppSettings>) => void;
+  onOpenVoiceModal?: () => void;
 }
 
 export const SeniorModeView: React.FC<SeniorModeViewProps> = ({ 
   onNavigate, 
   settings,
-  onUpdateSettings 
+  onUpdateSettings,
+  onOpenVoiceModal
 }) => {
   const t = translations[settings.language] || translations.EN;
   const [activeFeedback, setActiveFeedback] = useState<string | null>(null);
@@ -49,7 +53,7 @@ export const SeniorModeView: React.FC<SeniorModeViewProps> = ({
   const speakGuide = () => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance("Welcome to Senior Citizen Mode. Tap any large button below to open family trees, calculate property shares, or speak to your legal assistant.");
+      const utterance = new SpeechSynthesisUtterance("Welcome to Senior Citizen Mode. Tap the large microphone button to speak your family details in English, Hindi, Tamil, Telugu, Malayalam, Kannada, Bengali, or Marathi.");
       utterance.rate = 0.9;
       setSpeakingText(true);
       utterance.onend = () => setSpeakingText(false);
@@ -102,6 +106,46 @@ export const SeniorModeView: React.FC<SeniorModeViewProps> = ({
           <Volume2 className="w-5 h-5 text-emerald-300" />
           <span>{speakingText ? "Reading Guide..." : "Listen Audio Guide"}</span>
         </button>
+      </div>
+
+      {/* Voice-First Hero Card for Senior Citizens */}
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950 border-2 border-indigo-500/50 shadow-2xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Mic className="w-6 h-6 text-emerald-400 animate-pulse" />
+              <h3 className="text-xl md:text-2xl font-bold text-white font-serif">Voice-First Gemini AI</h3>
+            </div>
+            <p className="text-sm text-slate-300">
+              No typing needed! Speak naturally in English, Hindi, Tamil, Telugu, Malayalam, Kannada, Bengali, or Marathi.
+            </p>
+          </div>
+
+          <button
+            onClick={onOpenVoiceModal}
+            className="px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-extrabold text-base flex items-center justify-center gap-3 shadow-2xl active:scale-95 transition-all shrink-0 border-2 border-emerald-300/40"
+          >
+            <Mic className="w-6 h-6 text-amber-300 animate-bounce" />
+            <span>Tap & Speak Now</span>
+          </button>
+        </div>
+
+        {/* Spoken Language Quick Pills */}
+        <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-xs font-bold text-indigo-300 uppercase shrink-0 flex items-center gap-1">
+            <Globe className="w-3.5 h-3.5" />
+            8 Languages:
+          </span>
+          {['English', 'हिन्दी', 'தமிழ்', 'తెలుగు', 'മലയാളം', 'ಕನ್ನಡ', 'বাংলা', 'मराठी'].map((langName, idx) => (
+            <button
+              key={idx}
+              onClick={onOpenVoiceModal}
+              className="px-3 py-1 rounded-xl bg-slate-900/90 border border-slate-700 text-slate-200 text-xs font-bold shrink-0 hover:bg-slate-800"
+            >
+              {langName}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* High Priority 3 Core Step Modules */}

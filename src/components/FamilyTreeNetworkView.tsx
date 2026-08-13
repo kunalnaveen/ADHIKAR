@@ -1,21 +1,46 @@
 import React, { useState } from 'react';
-import { AppSettings, FamilyMember, FamilyTreeData } from '../types';
+import { AppSettings, FamilyMember, FamilyTreeData, UserProfile } from '../types';
 import { translations } from '../data/translations';
 import { ShaderBackground } from './ShaderBackground';
-import { Edit3, Plus, Lightbulb, Gavel, UserCheck, X, Check, Scale } from 'lucide-react';
+import { Edit3, Plus, Lightbulb, Gavel, UserCheck, X, Check, Scale, Cloud, CloudCheck, Loader2 } from 'lucide-react';
+import { saveFamilyTreeToFirestore } from '../lib/firebase';
 
 interface FamilyTreeNetworkViewProps {
   tree: FamilyTreeData;
   onUpdateTree: (updatedTree: FamilyTreeData) => void;
   settings: AppSettings;
+  user?: UserProfile | null;
+  onOpenAuth?: () => void;
 }
 
 export const FamilyTreeNetworkView: React.FC<FamilyTreeNetworkViewProps> = ({
   tree,
   onUpdateTree,
   settings,
+  user,
+  onOpenAuth,
 }) => {
   const t = translations[settings.language] || translations.EN;
+
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const handleSaveToCloud = async () => {
+    if (!user) {
+      onOpenAuth?.();
+      return;
+    }
+    setSaving(true);
+    try {
+      await saveFamilyTreeToFirestore(user.id, tree);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -73,13 +98,37 @@ export const FamilyTreeNetworkView: React.FC<FamilyTreeNetworkViewProps> = ({
             <h2 className="text-lg font-bold text-white font-sans">{tree.title}</h2>
             <p className="text-xs text-slate-400 mt-0.5">{tree.subtitle} • {tree.propositusName}</p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="w-10 h-10 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 hover:bg-indigo-600/20 transition-colors"
-            title="Edit / Add Heir"
-          >
-            <Edit3 className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSaveToCloud}
+              disabled={saving}
+              className={`px-3 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all shadow-md ${
+                saveSuccess
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border-indigo-500/40'
+              }`}
+              title="Save Family Tree to Firestore Cloud"
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+              ) : saveSuccess ? (
+                <Check className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <Cloud className="w-4 h-4 text-indigo-400" />
+              )}
+              <span className="hidden sm:inline">
+                {saveSuccess ? 'Saved to Cloud' : 'Save Tree'}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="w-10 h-10 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 hover:bg-indigo-600/20 transition-colors"
+              title="Edit / Add Heir"
+            >
+              <Edit3 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Tree Container Canvas */}

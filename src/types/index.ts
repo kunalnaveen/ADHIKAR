@@ -129,6 +129,9 @@ export interface UserProfile {
   savedTreesCount: number;
   completedDocsCount: number;
   upcomingAppointments: number;
+  photoURL?: string;
+  riskAssessmentsCount?: number;
+  peaceScoresCount?: number;
 }
 
 export type DocumentCategory = 'will' | 'property_deed' | 'identification' | 'succession_cert' | 'settlement' | 'other';

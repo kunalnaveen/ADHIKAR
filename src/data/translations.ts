@@ -1,4 +1,5 @@
 import { Language } from '../types';
+import { t } from '../utils/translate';
 
 export interface TranslationDictionary {
   appName: string;
@@ -126,50 +127,30 @@ const enDict: TranslationDictionary = {
   readinessCheck: "Readiness Check",
 };
 
-const hiDict: TranslationDictionary = {
-  ...enDict,
-  appName: "अधिकार",
-  offlineMode: "ऑफलाइन मोड सक्रिय",
-  home: "मुख्य पृष्ठ",
-  network: "वंश वृक्ष",
-  calc: "गणना",
-  assist: "सहायक",
-  storage: "संग्रहण",
-  womenRights: "महिला अधिकार",
-  seniorMode: "वरिष्ठ मोड",
-  knowYourRights: "विवाद शुरू होने से पहले अपने अधिकार जानें।",
-  heroSub: "एआई-संचालित स्पष्टता के साथ जटिल उत्तराधिकार कानूनों को समझें।",
-  startInterview: "एआई साक्षात्कार शुरू करें",
-  disputesPrevented: "विवाद रोके गए",
-  successionsAnalyzed: "उत्तराधिकार का विश्लेषण",
-  coreTools: "मुख्य उपकरण",
-  seeAll: "सभी देखें",
-  interactiveFamilyTree: "इंटरएक्टिव परिवार वृक्ष",
-  familyTreeSub: "वंश रेखा मानचित्र बनाएं और सटीक कानूनी हिस्से देखें।",
-  inheritanceTwin: "उत्तराधिकार डिजिटल ट्विन",
-  inheritanceTwinSub: "कानून के तहत संपत्ति विभाजन परिदृश्यों का अनुकरण करें।",
-  womensRightsCenter: "महिला अधिकार केंद्र",
-  womensRightsSub: "उत्तराधिकार सहदायाद समानता पर विशेष मार्गदर्शन।",
-  riskRadar: "विवाद जोखिम रडार",
-  healthScore: "स्वास्थ्य स्कोर",
-  legacyTimeline: "विरासत समय-रेखा",
-  readinessCheck: "कानूनी तैयारी जांच",
-};
+function createDict(lang: Language): TranslationDictionary {
+  if (lang === 'EN') return enDict;
+  const result: any = {};
+  for (const key of Object.keys(enDict) as (keyof TranslationDictionary)[]) {
+    const orig = enDict[key];
+    result[key] = t(orig, lang);
+  }
+  return result as TranslationDictionary;
+}
 
 export const translations: Record<Language, TranslationDictionary> = {
   EN: enDict,
-  HI: hiDict,
-  TA: { ...enDict, appName: "அதிகார்", home: "முகப்பு", womenRights: "பெண்கள் உரிமை", riskRadar: "சவால்கள் ரேடார்" },
-  TE: { ...enDict, appName: "అధికార్", home: "హోమ్", womenRights: "మహిళల హక్కులు", riskRadar: "రిస్క్ రాడార్" },
-  ML: { ...enDict, appName: "അധികാർ", home: "ഹോം", womenRights: "സ്ത്രീകളുടെ അവകാശങ്ങൾ" },
-  KN: { ...enDict, appName: "ಅಧಿಕಾರ್", home: "ಮುಖಪುಟ", womenRights: "ಮಹಿಳೆಯರ ಹಕ್ಕುಗಳು" },
-  BN: { ...enDict, appName: "অধিকার", home: "হোম", womenRights: "নারীর অধিকার" },
-  MR: { ...enDict, appName: "अधिकार", home: "मुख्य", womenRights: "महिला हक्क" },
-  GU: { ...enDict, appName: "અધિકાર", home: "હોમ", womenRights: "મહિલા અધિકાર" },
-  PA: { ...enDict, appName: "ਅਧਿਕਾਰ", home: "ਹੋਮ", womenRights: "ਔਰਤਾਂ ਦੇ ਹੱਕ" },
-  UR: { ...enDict, appName: "حقوق (ادھیکار)", home: "ہوم", womenRights: "خواتین کے حقوق" },
-  OR: { ...enDict, appName: "ଅଧିକାର", home: "ମୁଖ୍ୟ", womenRights: "ମହିଳା ଅଧିକାର" },
-  AS: { ...enDict, appName: "অধিকাৰ", home: "মুখ্য", womenRights: "মহিলাৰ অধিকাৰ" },
-  BHO: { ...enDict, appName: "अधिकार", home: "घर", womenRights: "मेहरारू के अधिकार" },
-  MAI: { ...enDict, appName: "अधिकार", home: "मुख्य", womenRights: "महिला अधिकार" },
+  HI: createDict('HI'),
+  TA: createDict('TA'),
+  TE: createDict('TE'),
+  ML: createDict('ML'),
+  KN: createDict('KN'),
+  BN: createDict('BN'),
+  MR: createDict('MR'),
+  GU: createDict('GU'),
+  PA: createDict('PA'),
+  UR: createDict('UR'),
+  OR: createDict('OR'),
+  AS: createDict('AS'),
+  BHO: createDict('BHO'),
+  MAI: createDict('MAI'),
 };

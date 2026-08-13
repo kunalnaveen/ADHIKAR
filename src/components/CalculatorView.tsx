@@ -1,18 +1,46 @@
 import React, { useState } from 'react';
-import { AppSettings, FamilyTreeData, LegalProcessStep } from '../types';
+import { AppSettings, FamilyTreeData, LegalProcessStep, UserProfile } from '../types';
 import { translations } from '../data/translations';
 import { generateLegalSummaryPDF } from '../utils/pdfGenerator';
-import { Gavel, CheckCircle2, ChevronRight, Download, Info, ShieldAlert, Sparkles, Building, Landmark, Gem } from 'lucide-react';
+import { Gavel, CheckCircle2, ChevronRight, Download, Info, ShieldAlert, Sparkles, Building, Landmark, Gem, Cloud, Check, Loader2 } from 'lucide-react';
+import { saveInheritanceReportToFirestore } from '../lib/firebase';
 
 interface CalculatorViewProps {
   tree: FamilyTreeData;
   steps: LegalProcessStep[];
   settings: AppSettings;
+  user?: UserProfile | null;
+  onOpenAuth?: () => void;
 }
 
-export const CalculatorView: React.FC<CalculatorViewProps> = ({ tree, steps, settings }) => {
+export const CalculatorView: React.FC<CalculatorViewProps> = ({ tree, steps, settings, user, onOpenAuth }) => {
   const t = translations[settings.language] || translations.EN;
   const [downloading, setDownloading] = useState(false);
+  const [savingReport, setSavingReport] = useState(false);
+  const [reportSaved, setReportSaved] = useState(false);
+
+  const handleSaveReportToCloud = async () => {
+    if (!user) {
+      onOpenAuth?.();
+      return;
+    }
+    setSavingReport(true);
+    try {
+      await saveInheritanceReportToFirestore(user.id, {
+        title: `Inheritance Report - ${tree.propositusName}`,
+        decedentName: tree.propositusName,
+        personalLaw: tree.religionLaw,
+        totalAssetValue: tree.assets.length * 1000000,
+        shares: tree.members.map(m => ({ name: m.name, relationship: m.relationship, share: m.estimatedSharePercent })),
+      });
+      setReportSaved(true);
+      setTimeout(() => setReportSaved(false), 3000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingReport(false);
+    }
+  };
 
   const handleDownloadPDF = () => {
     setDownloading(true);
@@ -183,15 +211,36 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({ tree, steps, set
         </div>
       </div>
 
-      {/* PDF Download Button */}
-      <button
-        onClick={handleDownloadPDF}
-        disabled={downloading}
-        className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 transition-all"
-      >
-        <Download className="w-5 h-5" />
-        <span>{downloading ? "Generating PDF..." : t.downloadReport}</span>
-      </button>
+      {/* Action Buttons: Save to Cloud & PDF Download */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button
+          onClick={handleSaveReportToCloud}
+          disabled={savingReport}
+          className={`py-4 px-4 font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 border transition-all active:scale-95 shadow-lg ${
+            reportSaved 
+              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
+              : 'bg-indigo-900/60 hover:bg-indigo-900 text-indigo-200 border-indigo-500/30'
+          }`}
+        >
+          {savingReport ? (
+            <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+          ) : reportSaved ? (
+            <Check className="w-5 h-5 text-emerald-400" />
+          ) : (
+            <Cloud className="w-5 h-5 text-indigo-400" />
+          )}
+          <span>{reportSaved ? "Saved to Cloud Firestore!" : "Save Report to Cloud"}</span>
+        </button>
+
+        <button
+          onClick={handleDownloadPDF}
+          disabled={downloading}
+          className="py-4 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 transition-all"
+        >
+          <Download className="w-5 h-5" />
+          <span>{downloading ? "Generating PDF..." : t.downloadReport}</span>
+        </button>
+      </div>
     </div>
   );
 };

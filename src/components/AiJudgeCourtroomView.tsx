@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppSettings, FamilyTreeData } from '../types';
+import { AppSettings, FamilyTreeData, UserProfile } from '../types';
 import { translations } from '../data/translations';
 import { 
   Gavel, 
@@ -17,17 +17,54 @@ import {
   ArrowRight,
   Zap,
   Building2,
-  Users
+  Users,
+  Cloud,
+  Check,
+  Loader2
 } from 'lucide-react';
+import { savePeaceScoreToFirestore } from '../lib/firebase';
 
 interface AiJudgeCourtroomViewProps {
   tree: FamilyTreeData;
   settings: AppSettings;
   onNavigate: (view: string) => void;
+  user?: UserProfile | null;
+  onOpenAuth?: () => void;
 }
 
-export const AiJudgeCourtroomView: React.FC<AiJudgeCourtroomViewProps> = ({ tree, settings, onNavigate }) => {
+export const AiJudgeCourtroomView: React.FC<AiJudgeCourtroomViewProps> = ({ tree, settings, onNavigate, user, onOpenAuth }) => {
   const t = translations[settings.language] || translations.EN;
+
+  const [savingPeace, setSavingPeace] = useState(false);
+  const [peaceSaved, setPeaceSaved] = useState(false);
+
+  const handleSavePeaceScoreToCloud = async () => {
+    if (!user) {
+      onOpenAuth?.();
+      return;
+    }
+    const currentPeaceScore = 72;
+    setSavingPeace(true);
+    try {
+      await savePeaceScoreToFirestore(user.id, {
+        title: `Family Peace Score (${currentPeaceScore}/100)`,
+        peaceScore: currentPeaceScore,
+        litigationYears: 12,
+        estimatedCost: "₹ 8,50,000+",
+        recommendations: [
+          "Execute an Out-of-Court Family Settlement Deed (FSD)",
+          "Utilize ADHIKAR Offline Audio Mediator before filing in Sub-Court",
+          "Register clear boundary demarcation deeds with local Tahsildar"
+        ]
+      });
+      setPeaceSaved(true);
+      setTimeout(() => setPeaceSaved(false), 3000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingPeace(false);
+    }
+  };
 
   // Active Tab: 'judge' | 'timemachine' | 'sms' | 'peace'
   const [activeTab, setActiveTab] = useState<'judge' | 'timemachine' | 'sms' | 'peace'>('judge');
@@ -551,12 +588,35 @@ export const AiJudgeCourtroomView: React.FC<AiJudgeCourtroomViewProps> = ({ tree
               <span>Emotional & Preventive Family Harmony Metric</span>
             </div>
 
-            <h2 className="text-2xl md:text-3xl font-extrabold text-white font-sans tracking-tight">
-              Family Peace Score Engine
-            </h2>
-            <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
-              Beyond legal code, ADHIKAR measures emotional clarity and conflict risk to safeguard family harmony before disputes reach court.
-            </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-extrabold text-white font-sans tracking-tight">
+                  Family Peace Score Engine
+                </h2>
+                <p className="text-xs text-slate-300 leading-relaxed max-w-2xl mt-1">
+                  Beyond legal code, ADHIKAR measures emotional clarity and conflict risk to safeguard family harmony before disputes reach court.
+                </p>
+              </div>
+
+              <button
+                onClick={handleSavePeaceScoreToCloud}
+                disabled={savingPeace}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold border flex items-center gap-2 transition-all shadow-lg active:scale-95 shrink-0 ${
+                  peaceSaved
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border-indigo-500/40'
+                }`}
+              >
+                {savingPeace ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                ) : peaceSaved ? (
+                  <Check className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <Cloud className="w-4 h-4 text-indigo-400" />
+                )}
+                <span>{peaceSaved ? 'Saved to Cloud' : 'Save Peace Score'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Peace Gauge Metric */}

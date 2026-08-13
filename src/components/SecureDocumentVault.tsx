@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SecureDocument, DocumentCategory, AppSettings } from '../types';
+import { SecureDocument, DocumentCategory, AppSettings, UserProfile } from '../types';
 import { 
   ShieldCheck, 
   Lock, 
@@ -21,14 +21,20 @@ import {
   Fingerprint,
   ScanFace,
   Calendar,
-  LockKeyhole
+  LockKeyhole,
+  Cloud,
+  Check,
+  Loader2
 } from 'lucide-react';
 import { BiometricAuthModal } from './BiometricAuthModal';
 import { DocumentDeadlineManager } from './DocumentDeadlineManager';
 import { parseDocumentForDeadlines } from '../utils/documentParser';
+import { saveGeneratedDocumentToFirestore, getGeneratedDocumentsFromFirestore } from '../lib/firebase';
 
 interface SecureDocumentVaultProps {
   settings: AppSettings;
+  user?: UserProfile | null;
+  onOpenAuth?: () => void;
 }
 
 const DEFAULT_DOCUMENTS: SecureDocument[] = [

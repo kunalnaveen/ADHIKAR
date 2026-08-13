@@ -2,6 +2,7 @@ import React from 'react';
 import { Home, GitFork, Calculator, Bot, Gavel, Shield, HardDrive } from 'lucide-react';
 import { Language, AppSettings } from '../types';
 import { translations } from '../data/translations';
+import { t as translateText } from '../utils/translate';
 
 interface BottomNavProps {
   currentView: string;
@@ -20,9 +21,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     { id: 'dashboard', label: t.home, icon: Home },
     { id: 'tree', label: t.network, icon: GitFork },
     { id: 'calculator', label: t.calc, icon: Calculator },
-    { id: 'courtroom', label: 'Courtroom', icon: Gavel },
+    { id: 'courtroom', label: translateText('Courtroom', settings.language), icon: Gavel },
     { id: 'interview', label: t.assist, icon: Bot },
-    { id: 'womensRights', label: t.womenRights.split(' ')[0], icon: Shield },
+    { id: 'womensRights', label: t.womenRights, icon: Shield },
     { id: 'storage', label: t.storage, icon: HardDrive },
   ];
 
