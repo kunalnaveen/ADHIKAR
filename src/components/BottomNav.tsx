@@ -30,8 +30,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   return (
     <nav className={`fixed bottom-0 left-0 w-full z-50 pb-safe transition-all duration-200 ${
       settings.seniorMode
-        ? 'bg-[#001736] border-t-2 border-[#775a19] shadow-2xl py-1'
-        : 'bg-slate-950/90 backdrop-blur-2xl border-t border-slate-800 shadow-2xl'
+        ? 'bg-[#0b0f19] border-t-2 border-slate-700 shadow-2xl py-1'
+        : 'bg-[#0b0f19]/95 backdrop-blur-2xl border-t border-slate-800/90 shadow-2xl'
     }`}>
       <div className="flex justify-around items-center h-16 max-w-xl mx-auto px-2">
         {navItems.map((item) => {
@@ -45,12 +45,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               className={`flex flex-col items-center justify-center gap-1 flex-1 h-12 transition-all rounded-xl my-auto ${
                 isActive
                   ? settings.seniorMode
-                    ? 'text-[#ffdea5] font-bold bg-[#775a19]/40'
-                    : 'text-indigo-400 font-bold bg-indigo-600/10 border border-indigo-500/20'
+                    ? 'text-white font-bold bg-slate-800 border border-slate-600'
+                    : 'text-indigo-300 font-bold bg-indigo-950/70 border border-indigo-500/40 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
               }`}
             >
-              <Icon className={`transition-transform ${isActive ? 'scale-110' : ''} ${
+              <Icon className={`transition-transform ${isActive ? 'scale-105' : ''} ${
                 settings.seniorMode ? 'w-6 h-6' : 'w-5 h-5'
               }`} />
               <span className={`tracking-wide font-medium ${

@@ -198,3 +198,114 @@ export interface ConsultationAppointment {
   reminderSet?: boolean;
 }
 
+export interface CalculatedShare {
+  memberId: string;
+  memberName: string;
+  relation: string;
+  percentage: number;
+  amount: number;
+  category: string;
+  reasoning: string;
+}
+
+export interface EmergencyContact {
+  id: string;
+  name: string;
+  relationship: string;
+  phone: string;
+  email?: string;
+  idNumber: string;
+  accessDurationHours: number;
+  documentScope: string[];
+  status: 'active' | 'pending' | 'revoked';
+  designatedDate: string;
+  notes?: string;
+}
+
+export interface EmergencyAccessSession {
+  id: string;
+  contactId?: string;
+  nomineeName: string;
+  emergencyType: string;
+  reasonDescription: string;
+  confidenceScore: number;
+  trustEvaluation: string;
+  approvedAccessHours: number;
+  startedAt: string;
+  expiresAt: string;
+  token: string;
+  status: 'active' | 'expired' | 'revoked';
+  permittedScope: string[];
+  riskSignals: string[];
+  logs: { timestamp: string; action: string }[];
+}
+
+export interface SmartWillDraft {
+  willTitle: string;
+  statutoryCompliance: string;
+  dateOfDrafting: string;
+  testatorDetails: {
+    name: string;
+    age: number;
+    address: string;
+    religion?: string;
+    soundMindDeclaration: string;
+  };
+  draftSummary: string;
+  formalClauses: {
+    clauseNumber: number;
+    title: string;
+    clauseText: string;
+  }[];
+  witnessesRequirement: {
+    role: string;
+    requirement: string;
+  }[];
+  legalValidityChecklist: {
+    check: string;
+    status: string;
+    note: string;
+  }[];
+}
+
+export type SignatureType = 'draw' | 'type';
+
+export interface ESignatureData {
+  id: string;
+  signatoryName: string;
+  signatoryRole: 'Testator' | 'Witness 1' | 'Witness 2' | 'Coparcener' | 'Executor' | 'Property Owner' | 'Nominee' | 'Declarant';
+  signatureType: SignatureType;
+  signatureDataUrl: string; // PNG data URL
+  typedFont?: string;
+  
+  // Authentication & Verification Metadata (from Firebase)
+  firebaseUid?: string;
+  authProvider?: string;
+  authenticatedEmail?: string;
+  authenticatedPhone?: string;
+  signatoryState?: string;
+  
+  // Integrity & Audit Trail
+  timestampIso: string;
+  timestampFormatted: string;
+  digitalFingerprintSha256: string;
+  ipAddressOrDeviceId: string;
+  legalActReference: string;
+  isVerified: boolean;
+  documentTitle?: string;
+  documentChecksum?: string;
+}
+
+export interface SignedDocumentRecord {
+  id: string;
+  documentTitle: string;
+  documentType: 'Will' | 'Family Settlement' | 'NOC' | 'Affidavit' | 'Partition Deed' | 'Inheritance Statement';
+  contentSnippet?: string;
+  createdAt: string;
+  signatures: ESignatureData[];
+  auditCertificateId: string;
+  isTamperProof: boolean;
+  tamperProofHash: string;
+}
+
+

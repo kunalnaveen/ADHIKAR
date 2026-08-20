@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -23,7 +24,18 @@ import {
   serverTimestamp,
   deleteDoc
 } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+// Safely load firebase config if provisioned, or fallback to dummy config for offline demo
+const configModules = import.meta.glob('../../firebase-applet-config.json', { eager: true });
+const loadedConfig = (Object.values(configModules)[0] as any)?.default || (Object.values(configModules)[0] as any);
+
+const firebaseConfig = loadedConfig || {
+  apiKey: "demo-api-key",
+  authDomain: "demo-adhikar.firebaseapp.com",
+  projectId: "demo-adhikar",
+  storageBucket: "demo-adhikar.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:demo"
+};
 
 // Initialize Firebase App
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -322,6 +334,73 @@ export const getPeaceScoresFromFirestore = async (uid: string) => {
     return snap.docs.map(doc => doc.data());
   } catch (error) {
     console.error("Error getting peace scores:", error);
+    return [];
+  }
+};
+
+// --- FIRESTORE E-SIGNATURES & SIGNED DOCUMENTS ---
+
+export const saveESignatureToFirestore = async (uid: string, signatureData: any) => {
+  try {
+    const sigRef = collection(db, 'users', uid, 'eSignatures');
+    const id = signatureData.id || `sig_${Date.now()}`;
+    const payload = {
+      ...signatureData,
+      id,
+      savedAt: new Date().toISOString()
+    };
+    await setDoc(doc(sigRef, id), payload, { merge: true });
+    return payload;
+  } catch (error) {
+    console.error("Error saving e-signature:", error);
+    throw error;
+  }
+};
+
+export const getESignaturesFromFirestore = async (uid: string) => {
+  try {
+    const sigRef = collection(db, 'users', uid, 'eSignatures');
+    const snap = await getDocs(sigRef);
+    return snap.docs.map(doc => doc.data());
+  } catch (error) {
+    console.error("Error getting e-signatures:", error);
+    return [];
+  }
+};
+
+export const saveSignedDocumentToFirestore = async (uid: string, signedDocData: any) => {
+  try {
+    const docRef = collection(db, 'users', uid, 'signedDocuments');
+    const id = signedDocData.id || `signed_${Date.now()}`;
+    const payload = {
+      ...signedDocData,
+      id,
+      savedAt: new Date().toISOString()
+    };
+    await setDoc(doc(docRef, id), payload, { merge: true });
+
+    // Increment completed docs count on user profile
+    const userRef = doc(db, 'users', uid);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      const currentCount = userSnap.data()?.completedDocsCount || 0;
+      await setDoc(userRef, { completedDocsCount: currentCount + 1 }, { merge: true });
+    }
+
+    return payload;
+  } catch (error) {
+    console.error("Error saving signed document:", error);
+    throw error;
+  }
+};
+
+export const getSignedDocumentsFromFirestore = async (uid: string) => {
+  try {
+    const docRef = collection(db, 'users', uid, 'signedDocuments');
+    const snap = await getDocs(docRef);
+    return snap.docs.map(doc => doc.data());
+  } catch (error) {
+    console.error("Error getting signed documents:", error);
     return [];
   }
 };

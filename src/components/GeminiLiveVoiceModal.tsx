@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AppSettings, FamilyTreeData, Language } from '../types';
+import { t as translateText } from '../utils/translate';
 import { 
   Mic, 
   MicOff, 
@@ -15,7 +16,8 @@ import {
   Play, 
   RotateCcw,
   Scale,
-  Bot
+  Bot,
+  AlertCircle
 } from 'lucide-react';
 
 interface GeminiLiveVoiceModalProps {
@@ -37,6 +39,13 @@ export const LANGUAGE_OPTIONS: { code: Language; name: string; native: string; b
   { code: 'KN', name: 'Kannada', native: 'ಕನ್ನಡ', bcp47: 'kn-IN' },
   { code: 'BN', name: 'Bengali', native: 'বাংলা', bcp47: 'bn-IN' },
   { code: 'MR', name: 'Marathi', native: 'मराठी', bcp47: 'mr-IN' },
+  { code: 'GU', name: 'Gujarati', native: 'ગુજરાતી', bcp47: 'gu-IN' },
+  { code: 'PA', name: 'Punjabi', native: 'ਪੰਜਾਬੀ', bcp47: 'pa-IN' },
+  { code: 'UR', name: 'Urdu', native: 'اردو', bcp47: 'ur-IN' },
+  { code: 'OR', name: 'Odia', native: 'ଓଡ଼ିଆ', bcp47: 'or-IN' },
+  { code: 'AS', name: 'Assamese', native: 'অসমীয়া', bcp47: 'as-IN' },
+  { code: 'BHO', name: 'Bhojpuri', native: 'भोजपुरी', bcp47: 'hi-IN' },
+  { code: 'MAI', name: 'Maithili', native: 'मैथिली', bcp47: 'hi-IN' },
 ];
 
 export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
@@ -59,43 +68,53 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const recognitionRef = useRef<any>(null);
+  const tr = (str: string) => translateText(str, selectedLang);
 
   // Get BCP-47 locale code
   const currentLangObj = LANGUAGE_OPTIONS.find(l => l.code === selectedLang) || LANGUAGE_OPTIONS[0];
 
-  // Initialize SpeechRecognition if available
+  // Initialize SpeechRecognition
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
-      const rec = new SpeechRecognition();
-      rec.continuous = false;
-      rec.interimResults = true;
-      rec.lang = currentLangObj.bcp47;
+      try {
+        const rec = new SpeechRecognition();
+        rec.continuous = false;
+        rec.interimResults = true;
+        rec.lang = currentLangObj.bcp47;
 
-      rec.onresult = (event: any) => {
-        let currentText = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          currentText += event.results[i][0].transcript;
-        }
-        setTranscript(currentText);
-      };
+        rec.onresult = (event: any) => {
+          let currentText = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            currentText += event.results[i][0].transcript;
+          }
+          setTranscript(currentText);
+        };
 
-      rec.onerror = (event: any) => {
-        console.warn("Speech recognition notice:", event.error);
-        setIsListening(false);
-      };
+        rec.onerror = (event: any) => {
+          console.warn("Speech recognition notice:", event.error);
+          setIsListening(false);
+          if (event.error === 'not-allowed') {
+            setErrorMessage("Microphone access denied. You can tap any preset example below or type in your language.");
+          }
+        };
 
-      rec.onend = () => {
-        setIsListening(false);
-      };
+        rec.onend = () => {
+          setIsListening(false);
+        };
 
-      recognitionRef.current = rec;
+        recognitionRef.current = rec;
+      } catch (err) {
+        console.warn("Speech recognition initialization error:", err);
+      }
     }
   }, [selectedLang, currentLangObj.bcp47]);
 
   const toggleListening = () => {
     if (isListening) {
-      recognitionRef.current?.stop();
+      try {
+        recognitionRef.current?.stop();
+      } catch (e) {}
       setIsListening(false);
       if (transcript.trim().length > 0) {
         handleProcessSpeech(transcript);
@@ -103,11 +122,19 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
     } else {
       setErrorMessage(null);
       setTranscript('');
-      try {
-        recognitionRef.current?.start();
-        setIsListening(true);
-      } catch (err) {
-        setIsListening(true); // Fallback UI state if Web Speech requires user manual click
+      setIsListening(true);
+
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition && recognitionRef.current) {
+        try {
+          recognitionRef.current.lang = currentLangObj.bcp47;
+          recognitionRef.current.start();
+        } catch (err) {
+          console.warn("SpeechRecognition start fallback:", err);
+        }
+      } else {
+        // Fallback for browsers without SpeechRecognition
+        setErrorMessage("Live voice input is using text fallback. Select an example below or type family details.");
       }
     }
   };
@@ -148,7 +175,7 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
       }
     } catch (err) {
       console.error("Gemini Voice API Error:", err);
-      setErrorMessage("Voice processing temporarily offline. Showing legal calculation.");
+      setErrorMessage("Voice processing temporarily offline. Showing deterministic legal calculation.");
     } finally {
       setIsProcessing(false);
     }
@@ -198,12 +225,12 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-xl font-extrabold text-white font-serif tracking-tight">Gemini Live Voice AI</h3>
+                <h3 className="text-xl font-extrabold text-white font-serif tracking-tight">{tr("Gemini Live Voice")}</h3>
                 <span className="bg-emerald-500/20 text-emerald-300 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
-                  Multilingual
+                  {tr("Multilingual")}
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Speak naturally in your native language to map lineage and calculate shares.</p>
+              <p className="text-xs text-slate-400">{tr("Built for India's next billion users.")}</p>
             </div>
           </div>
 
@@ -225,7 +252,7 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5" />
-              <span>Select Spoken Language</span>
+              <span>{tr("Select Language")}</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {LANGUAGE_OPTIONS.map((lang) => (
@@ -239,7 +266,7 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
                   }`}
                 >
                   <span>{lang.native}</span>
-                  <span className="text-[10px] opacity-60 ml-1">({lang.name})</span>
+                  <span className="text-[10px] opacity-60 ml-1">({lang.code})</span>
                 </button>
               ))}
             </div>
@@ -273,7 +300,7 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
             </button>
 
             <span className="text-xs font-bold text-slate-300 mt-2">
-              {isListening ? 'Listening... Tap to process speech' : 'Tap Microphone & Speak Family Details'}
+              {isListening ? tr("Listening... Tap to process speech") : tr("Tap Microphone & Speak Family Details")}
             </span>
 
             {/* Editable or Speech Live Transcript box */}
@@ -281,7 +308,7 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
               <textarea
                 value={transcript}
                 onChange={(e) => setTranscript(e.target.value)}
-                placeholder='e.g. "My father passed away. My mother is alive. I have one brother and one sister."'
+                placeholder={selectedLang === 'HI' ? 'उदा. "मेरे पिता का निधन हो गया। मेरी माता जीवित हैं। मेरा एक भाई और एक बहन है।"' : 'e.g. "My father passed away. My mother is alive. I have one brother and one sister."'}
                 rows={2}
                 className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-center resize-none"
               />
@@ -292,10 +319,10 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
               <button
                 onClick={() => handleProcessSpeech(transcript)}
                 disabled={isProcessing || !transcript.trim()}
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg disabled:opacity-50 transition-all"
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg disabled:opacity-50 transition-all active:scale-95"
               >
                 <Sparkles className="w-4 h-4 text-emerald-300" />
-                <span>{isProcessing ? 'Analyzing Voice...' : 'Analyze Family Voice'}</span>
+                <span>{isProcessing ? 'Analyzing...' : tr("Analyze Family Voice")}</span>
               </button>
 
               {transcript && (
@@ -313,21 +340,21 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
           {/* Quick Voice Prompt Shortcuts */}
           <div className="space-y-2">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-              Try Preset Example Scenarios:
+              {selectedLang === 'HI' ? 'उदाहरण परिदृश्य चुनें (टैप करें):' : 'Try Preset Example Scenarios:'}
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                onClick={() => handleQuickSample("मेरे पिता का निधन हो गया। मेरी माता जीवित हैं। मेरा एक भाई और एक बहन है।")}
+                className="bg-slate-950/60 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl text-left text-[11px] text-slate-300 hover:text-white transition-colors flex items-center justify-between font-sans"
+              >
+                <span>"पिताजी का निधन। माताजी, 1 भाई और 1 बहन है।"</span>
+                <Play className="w-3 h-3 text-indigo-400 shrink-0 ml-1" />
+              </button>
               <button
                 onClick={() => handleQuickSample("My father passed away. My mother is alive. I have one brother and one sister.")}
                 className="bg-slate-950/60 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl text-left text-[11px] text-slate-300 hover:text-white transition-colors flex items-center justify-between"
               >
-                <span>"My father passed away. Mother alive. 1 brother, 1 sister."</span>
-                <Play className="w-3 h-3 text-indigo-400 shrink-0 ml-1" />
-              </button>
-              <button
-                onClick={() => handleQuickSample("मेरे पिता का निधन हो गया। मेरी माता जीवित हैं। मेरा एक भाई और एक बहन है।")}
-                className="bg-slate-950/60 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl text-left text-[11px] text-slate-300 hover:text-white transition-colors flex items-center justify-between font-serif"
-              >
-                <span>"पिताजी का निधन। माताजी, 1 भाई और 1 बहन है।"</span>
+                <span>"Father deceased. Mother alive. 1 brother, 1 sister."</span>
                 <Play className="w-3 h-3 text-indigo-400 shrink-0 ml-1" />
               </button>
             </div>
@@ -369,7 +396,7 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4" />
-                      Detected Heirs & Legal Rights
+                      {tr("Class I Heir")} & Legal Rights
                     </span>
                     <button
                       onClick={() => {
@@ -378,7 +405,7 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
                       }}
                       className="text-xs font-bold text-indigo-400 hover:underline flex items-center gap-1"
                     >
-                      <span>View Family Tree</span>
+                      <span>{tr("Interactive Family Tree")}</span>
                       <GitFork className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -388,7 +415,7 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
                   </p>
 
                   <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
-                    <strong>Legal Rule:</strong> {aiResponse.legalExplanation}
+                    <strong>Rule:</strong> {aiResponse.legalExplanation}
                   </div>
                 </div>
               )}
@@ -398,7 +425,7 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
                 <div className="space-y-2">
                   <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1">
                     <HelpCircle className="w-3.5 h-3.5" />
-                    Suggested Voice Follow-ups:
+                    Suggested Follow-ups:
                   </span>
                   <div className="space-y-1.5">
                     {aiResponse.followUpQuestions.map((q: string, idx: number) => (
@@ -418,8 +445,9 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
           )}
 
           {errorMessage && (
-            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs">
-              {errorMessage}
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMessage}</span>
             </div>
           )}
 
@@ -436,7 +464,7 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
             className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-2"
           >
             <Scale className="w-4 h-4 text-emerald-400" />
-            <span>Open Property Calculator</span>
+            <span>{tr("CALC")}</span>
           </button>
 
           <button
@@ -446,7 +474,7 @@ export const GeminiLiveVoiceModal: React.FC<GeminiLiveVoiceModalProps> = ({
             }}
             className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold"
           >
-            Done
+            {tr("Done")}
           </button>
         </div>
 

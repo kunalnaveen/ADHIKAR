@@ -30,6 +30,8 @@ import { BiometricAuthModal } from './BiometricAuthModal';
 import { DocumentDeadlineManager } from './DocumentDeadlineManager';
 import { parseDocumentForDeadlines } from '../utils/documentParser';
 import { saveGeneratedDocumentToFirestore, getGeneratedDocumentsFromFirestore } from '../lib/firebase';
+import { DocumentScannerModal } from './DocumentScannerModal';
+import { Camera, Scan } from 'lucide-react';
 
 interface SecureDocumentVaultProps {
   settings: AppSettings;
@@ -108,6 +110,7 @@ export const SecureDocumentVault: React.FC<SecureDocumentVaultProps> = ({ settin
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [vaultUnlocked, setVaultUnlocked] = useState<boolean>(false);
   const [showGlobalBioModal, setShowGlobalBioModal] = useState<boolean>(false);
+  const [showScannerModal, setShowScannerModal] = useState<boolean>(false);
 
   useEffect(() => {
     localStorage.setItem('adhikar_vault_docs', JSON.stringify(documents));
@@ -373,7 +376,16 @@ export const SecureDocumentVault: React.FC<SecureDocumentVaultProps> = ({ settin
               <option value="other">Other Legal Record</option>
             </select>
 
-            <label className="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition-all">
+            <button
+              type="button"
+              onClick={() => setShowScannerModal(true)}
+              className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all shrink-0"
+            >
+              <Camera className="w-4 h-4 stroke-[2.5]" />
+              <span>Scan with Camera (OCR)</span>
+            </button>
+
+            <label className="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition-all shrink-0">
               <Upload className="w-4 h-4" />
               <span>Select File</span>
               <input 
@@ -589,6 +601,17 @@ export const SecureDocumentVault: React.FC<SecureDocumentVaultProps> = ({ settin
           </p>
         </div>
       </div>
+      {/* Document Scanner Modal */}
+      {showScannerModal && (
+        <DocumentScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          settings={settings}
+          onDocumentIndexed={(newDoc) => {
+            setDocuments((prev) => [newDoc, ...prev]);
+          }}
+        />
+      )}
     </div>
   );
 };

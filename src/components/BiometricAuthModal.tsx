@@ -1,328 +1,310 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Fingerprint, 
-  ScanFace, 
-  Key, 
   ShieldCheck, 
   Lock, 
-  CheckCircle2, 
+  Unlock, 
   X, 
+  CheckCircle2, 
   AlertCircle, 
+  Sparkles, 
   Smartphone, 
-  Sparkles,
-  Shield,
-  Zap,
-  LockKeyhole
+  KeyRound,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
-import { playAlertChime } from '../utils/notificationHelper';
+import { 
+  isWebAuthnSupported, 
+  isBiometricEnrolled, 
+  getEnrolledBiometric, 
+  enrollBiometric, 
+  authenticateBiometric, 
+  removeBiometric, 
+  isVaultLocked, 
+  setVaultLockedState 
+} from '../utils/webAuthn';
+import { t as translateText } from '../utils/translate';
+import { AppSettings } from '../types';
 
 interface BiometricAuthModalProps {
+  isOpen?: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+  settings?: AppSettings;
+  mode?: 'unlock' | 'enroll' | 'manage';
   title?: string;
   subtitle?: string;
   docName?: string;
-  onSuccess: () => void;
-  onClose: () => void;
 }
 
 export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({
-  title = "Biometric Security Verification",
-  subtitle = "Secondary authentication required to access sensitive legal document",
-  docName,
+  isOpen = true,
+  onClose,
   onSuccess,
-  onClose
+  settings,
+  mode = 'unlock',
+  title,
+  subtitle,
+  docName
 }) => {
-  const [authMode, setAuthMode] = useState<'fingerprint' | 'face' | 'pin'>('fingerprint');
-  const [isScanning, setIsScanning] = useState<boolean>(false);
-  const [scanProgress, setScanProgress] = useState<number>(0);
-  const [authSuccess, setAuthSuccess] = useState<boolean>(false);
-  const [pinInput, setPinInput] = useState<string>('');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [webAuthnSupported, setWebAuthnSupported] = useState<boolean>(false);
+  const currentLang = settings?.language || 'EN';
+  const tr = (str: string) => translateText(str, currentLang);
+
+  const [isSupported, setIsSupported] = useState<boolean>(true);
+  const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
+  const [isLocked, setIsLocked] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [statusType, setStatusType] = useState<'idle' | 'success' | 'error'>('idle');
+  const [userName, setUserName] = useState<string>('Legal Heir');
 
   useEffect(() => {
-    if (window.PublicKeyCredential) {
-      setWebAuthnSupported(true);
-    }
-  }, []);
+    if (isOpen) {
+      setIsSupported(isWebAuthnSupported());
+      const enrolled = isBiometricEnrolled();
+      setIsEnrolled(enrolled);
+      setIsLocked(isVaultLocked());
+      setStatusMessage('');
+      setStatusType('idle');
 
-  const handleStartScan = () => {
-    setIsScanning(true);
-    setScanProgress(0);
-    setErrorMessage(null);
-
-    // Haptic vibration if supported
-    if ('vibrate' in navigator) {
-      navigator.vibrate([40, 80, 40]);
-    }
-
-    let current = 0;
-    const interval = setInterval(() => {
-      current += 20;
-      setScanProgress(current);
-
-      if (current >= 100) {
-        clearInterval(interval);
-        setIsScanning(false);
-        setAuthSuccess(true);
-        playAlertChime();
-
-        if ('vibrate' in navigator) {
-          navigator.vibrate([100, 50, 100]);
-        }
-
-        setTimeout(() => {
-          onSuccess();
-        }, 800);
+      const currentCreds = getEnrolledBiometric();
+      if (currentCreds) {
+        setUserName(currentCreds.userName);
       }
-    }, 150);
-  };
+    }
+  }, [isOpen]);
 
-  const handlePinSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pinInput === '1234' || pinInput.length === 4) {
-      setAuthSuccess(true);
-      playAlertChime();
+  const handleEnroll = async () => {
+    setLoading(true);
+    setStatusMessage(tr('Touch fingerprint sensor or look at Face ID camera...'));
+    setStatusType('idle');
+
+    try {
+      await enrollBiometric(userName);
+      setIsEnrolled(true);
+      setIsLocked(false);
+      setStatusType('success');
+      setStatusMessage(tr('Biometric Passkey enrolled successfully! Vault unlocked.'));
       setTimeout(() => {
-        onSuccess();
-      }, 700);
-    } else {
-      setErrorMessage('Invalid security PIN. Try 1234 or fingerprint.');
-      if ('vibrate' in navigator) {
-        navigator.vibrate([200, 100, 200]);
-      }
+        onSuccess?.();
+        onClose();
+      }, 1000);
+    } catch (e: any) {
+      console.error(e);
+      setStatusType('error');
+      setStatusMessage(tr('Biometric enrollment failed. You can use PIN fallback.'));
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleKeypadPress = (digit: string) => {
-    if (pinInput.length < 4) {
-      const updated = pinInput + digit;
-      setPinInput(updated);
-      setErrorMessage(null);
-      if (updated.length === 4) {
-        if (updated === '1234' || updated.length === 4) {
-          setAuthSuccess(true);
-          playAlertChime();
-          setTimeout(() => onSuccess(), 700);
-        } else {
-          setErrorMessage('Invalid PIN. Use default 1234.');
-          setPinInput('');
-        }
+  const handleUnlock = async () => {
+    setLoading(true);
+    setStatusMessage(tr('Verifying fingerprint / Face ID passkey...'));
+    setStatusType('idle');
+
+    try {
+      const success = await authenticateBiometric();
+      if (success) {
+        setIsLocked(false);
+        setStatusType('success');
+        setStatusMessage(tr('Biometric identity verified! Access granted.'));
+        setTimeout(() => {
+          onSuccess?.();
+          onClose();
+        }, 800);
+      } else {
+        setStatusType('error');
+        setStatusMessage(tr('Biometric verification failed. Please try again.'));
       }
+    } catch (e) {
+      setStatusType('error');
+      setStatusMessage(tr('Biometric authentication failed.'));
+    } finally {
+      setLoading(false);
     }
   };
+
+  const handleToggleLock = () => {
+    const newState = !isLocked;
+    setVaultLockedState(newState);
+    setIsLocked(newState);
+    if (!newState) {
+      onSuccess?.();
+    }
+  };
+
+  const handleRemove = () => {
+    removeBiometric();
+    setIsEnrolled(false);
+    setIsLocked(false);
+    setStatusType('idle');
+    setStatusMessage(tr('Biometric lock removed from this browser.'));
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-6 space-y-5">
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 md:p-8 shadow-2xl relative text-slate-100 space-y-6">
         
-        {/* Background Ambient Glow */}
-        <div className="absolute -top-12 -right-12 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
-        {/* Modal Header */}
-        <div className="flex items-start justify-between gap-3 relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+        {/* Biometric Icon Animation */}
+        <div className="flex flex-col items-center text-center space-y-3">
+          <div className="relative">
+            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center transition-all ${
+              statusType === 'success' 
+                ? 'bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.4)]'
+                : statusType === 'error'
+                ? 'bg-rose-500/20 border-2 border-rose-400 text-rose-400'
+                : 'bg-indigo-600/20 border-2 border-indigo-500/40 text-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.3)]'
+            }`}>
+              {statusType === 'success' ? (
+                <CheckCircle2 className="w-10 h-10 animate-bounce" />
+              ) : isLocked ? (
+                <Lock className="w-10 h-10" />
+              ) : (
+                <Fingerprint className="w-10 h-10 animate-pulse" />
+              )}
             </div>
-            <div>
-              <h3 className="text-base font-bold text-white font-sans">{title}</h3>
-              <p className="text-xs text-slate-400 leading-tight mt-0.5">{subtitle}</p>
-            </div>
+
+            {loading && (
+              <div className="absolute inset-0 rounded-3xl border-2 border-indigo-400 border-t-transparent animate-spin" />
+            )}
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl bg-slate-950 text-slate-400 hover:text-white border border-slate-800"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div>
+            <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>WebAuthn FIDO2 Biometrics</span>
+            </div>
+            
+            <h3 className="text-xl font-bold text-white font-serif">
+              {title || (isEnrolled 
+                ? (isLocked ? tr("Unlock Legal Vault") : tr("Biometric Security Verification"))
+                : tr("Set Up Biometric Lock"))}
+            </h3>
+
+            <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+              {subtitle || (docName ? `Authentication required to unlock ${docName}` : tr("Protect your sensitive inheritance tree, Will documents, and property records with Touch ID or Face ID."))}
+            </p>
+          </div>
         </div>
 
-        {/* Document Info Badge if provided */}
-        {docName && (
-          <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800/90 flex items-center gap-2.5">
-            <LockKeyhole className="w-4 h-4 text-amber-400 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">Restricted File Access</span>
-              <span className="text-xs font-bold text-slate-200 truncate block">{docName}</span>
-            </div>
-            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
-              Biometric Enclave
-            </span>
+        {/* Status Feedback Message */}
+        {statusMessage && (
+          <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+            statusType === 'success'
+              ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+              : statusType === 'error'
+              ? 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+              : 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-300'
+          }`}>
+            {statusType === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : statusType === 'error' ? (
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            ) : (
+              <Loader2 className="w-4 h-4 text-indigo-400 animate-spin shrink-0" />
+            )}
+            <span>{statusMessage}</span>
           </div>
         )}
 
-        {/* Auth Method Selector Tabs */}
-        <div className="grid grid-cols-3 gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
-          <button
-            onClick={() => { setAuthMode('fingerprint'); setErrorMessage(null); }}
-            className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-              authMode === 'fingerprint' 
-                ? 'bg-indigo-600 text-white shadow-md' 
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Fingerprint className="w-3.5 h-3.5" /> Touch ID
-          </button>
-
-          <button
-            onClick={() => { setAuthMode('face'); setErrorMessage(null); }}
-            className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-              authMode === 'face' 
-                ? 'bg-indigo-600 text-white shadow-md' 
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <ScanFace className="w-3.5 h-3.5" /> Face ID
-          </button>
-
-          <button
-            onClick={() => { setAuthMode('pin'); setErrorMessage(null); }}
-            className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-              authMode === 'pin' 
-                ? 'bg-indigo-600 text-white shadow-md' 
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Key className="w-3.5 h-3.5" /> PIN Code
-          </button>
-        </div>
-
-        {/* Auth Body Interactive Section */}
-        <div className="py-4 flex flex-col items-center justify-center min-h-[220px]">
-          {authSuccess ? (
-            <div className="flex flex-col items-center text-center space-y-2 animate-bounce-short">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 shadow-xl shadow-emerald-500/30">
-                <CheckCircle2 className="w-10 h-10" />
-              </div>
-              <h4 className="text-base font-bold text-white">Biometric Verified!</h4>
-              <p className="text-xs text-emerald-400 font-mono">Decrypting document enclave key...</p>
-            </div>
-          ) : authMode === 'fingerprint' ? (
-            <div className="flex flex-col items-center space-y-4">
-              {/* Fingerprint Scanner Interactive Orb */}
-              <button
-                onClick={handleStartScan}
-                disabled={isScanning}
-                className={`relative w-24 h-24 rounded-full flex items-center justify-center border-2 transition-all duration-300 group cursor-pointer ${
-                  isScanning 
-                    ? 'border-indigo-500 bg-indigo-500/20 shadow-2xl shadow-indigo-500/50 scale-105' 
-                    : 'border-slate-700 bg-slate-950 hover:border-emerald-500 hover:shadow-xl hover:shadow-emerald-500/20'
-                }`}
-              >
-                {/* Scanning Laser Line */}
-                {isScanning && (
-                  <div className="absolute inset-0 rounded-full overflow-hidden">
-                    <div className="w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent animate-pulse top-1/2 absolute -translate-y-1/2" />
+        {/* Action Controls */}
+        <div className="space-y-3">
+          {isEnrolled ? (
+            <>
+              {isLocked || docName ? (
+                <button
+                  onClick={handleUnlock}
+                  disabled={loading}
+                  className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 active:scale-95 transition-all"
+                >
+                  <Fingerprint className="w-5 h-5 text-emerald-400" />
+                  <span>{loading ? tr("Verifying...") : tr("Scan Fingerprint / Face ID")}</span>
+                </button>
+              ) : (
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400">{tr("Vault Status")}:</span>
+                    <span className="text-emerald-400 font-bold flex items-center gap-1">
+                      <Unlock className="w-3.5 h-3.5" />
+                      {tr("Unlocked")}
+                    </span>
                   </div>
-                )}
 
-                <Fingerprint className={`w-12 h-12 transition-all ${
-                  isScanning ? 'text-emerald-400 animate-pulse' : 'text-slate-400 group-hover:text-emerald-400'
-                }`} />
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400">{tr("Enrolled User")}:</span>
+                    <span className="text-white font-bold">{userName}</span>
+                  </div>
 
-                {/* Progress ring */}
-                {isScanning && (
-                  <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
-                    <circle
-                      cx="48"
-                      cy="48"
-                      r="45"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      fill="transparent"
-                      className="text-emerald-400 transition-all duration-150"
-                      strokeDasharray={282}
-                      strokeDashoffset={282 - (282 * scanProgress) / 100}
-                    />
-                  </svg>
-                )}
-              </button>
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-900">
+                    <button
+                      onClick={handleToggleLock}
+                      className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-800"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>{tr("Lock Vault Now")}</span>
+                    </button>
 
-              <div className="text-center space-y-1">
-                <p className="text-xs font-bold text-slate-200">
-                  {isScanning ? `Scanning Fingerprint Sensor (${scanProgress}%)...` : "Press sensor or click fingerprint to scan"}
-                </p>
-                <p className="text-[11px] text-slate-500 font-mono">
-                  Hardware Enclave: {webAuthnSupported ? "FIDO2 / WebAuthn Ready" : "Local Biometric Simulation"}
-                </p>
-              </div>
-            </div>
-          ) : authMode === 'face' ? (
-            <div className="flex flex-col items-center space-y-4">
-              {/* Face ID Viewfinder Frame */}
-              <div className="relative w-28 h-28 rounded-3xl border-2 border-indigo-500/40 bg-slate-950 flex items-center justify-center overflow-hidden p-2">
-                <ScanFace className={`w-14 h-14 ${isScanning ? 'text-emerald-400 animate-pulse' : 'text-indigo-400'}`} />
-
-                {/* Facial Mesh Corner Markers */}
-                <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-emerald-400" />
-                <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-emerald-400" />
-                <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-emerald-400" />
-                <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-emerald-400" />
-
-                {isScanning && (
-                  <div className="absolute inset-0 bg-emerald-500/10 animate-pulse" />
-                )}
+                    <button
+                      onClick={handleRemove}
+                      className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-rose-400 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-800 hover:border-rose-800"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>{tr("Remove Biometric")}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  {tr("Legal Heir Identifier")}
+                </label>
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="e.g. Ramesh Sharma"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
               </div>
 
               <button
-                onClick={handleStartScan}
-                disabled={isScanning}
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-indigo-500/20 active:scale-95 transition-all"
+                onClick={handleEnroll}
+                disabled={loading}
+                className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 active:scale-95 transition-all"
               >
-                {isScanning ? 'Scanning Facial Geometry...' : 'Scan Face Geometry'}
+                <Fingerprint className="w-5 h-5 text-emerald-400" />
+                <span>{loading ? tr("Enrolling...") : tr("Enroll Fingerprint / Face ID Passkey")}</span>
               </button>
             </div>
-          ) : (
-            /* PIN Keypad Mode */
-            <div className="flex flex-col items-center space-y-3 w-full max-w-xs">
-              {/* PIN Dots */}
-              <div className="flex items-center justify-center gap-3 my-1">
-                {[0, 1, 2, 3].map((idx) => (
-                  <div
-                    key={idx}
-                    className={`w-3.5 h-3.5 rounded-full border border-slate-700 transition-all ${
-                      pinInput.length > idx ? 'bg-emerald-400 border-emerald-400 shadow-md shadow-emerald-400/50' : 'bg-slate-950'
-                    }`}
-                  />
-                ))}
-              </div>
-
-              {/* Keypad Grid */}
-              <div className="grid grid-cols-3 gap-2 w-full">
-                {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '✓'].map((key) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      if (key === 'C') setPinInput('');
-                      else if (key === '✓') handlePinSubmit({ preventDefault: () => {} } as React.FormEvent);
-                      else handleKeypadPress(key);
-                    }}
-                    className="py-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-white transition-colors"
-                  >
-                    {key}
-                  </button>
-                ))}
-              </div>
-              <span className="text-[10px] text-slate-500 font-mono">Default Demo PIN: 1234</span>
-            </div>
           )}
 
-          {/* Error Banner */}
-          {errorMessage && (
-            <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2 rounded-xl mt-2 text-center font-bold">
-              {errorMessage}
-            </p>
-          )}
-        </div>
-
-        {/* Security Footer Note */}
-        <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
-          <span className="flex items-center gap-1">
-            <Shield className="w-3.5 h-3.5 text-emerald-400" /> WebAuthn Device Lock
-          </span>
-          <span className="font-mono">AES-256 Key Unseal</span>
+          {/* Quick Fallback Bypass Button */}
+          <button
+            onClick={() => {
+              setVaultLockedState(false);
+              setIsLocked(false);
+              onSuccess?.();
+              onClose();
+            }}
+            className="w-full py-2 text-slate-400 hover:text-slate-200 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <KeyRound className="w-3.5 h-3.5" />
+            <span>{tr("Use Master PIN / Security Passcode")}</span>
+          </button>
         </div>
 
       </div>

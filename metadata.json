@@ -1,6 +1,6 @@
 {
-  "name": "ADHIKAR",
-  "description": "Digital Legal & Inheritance Assistant: Family tree mapping, succession share calculator, Gemini AI interview, women's rights center, senior mode, multilingual & voice support.",
-  "requestFramePermissions": [],
+  "name": "ADHIKAR Legal AI",
+  "description": "Statutory inheritance calculator, ancestral lineage mapping, and digital fiduciary legal readiness framework.",
+  "requestFramePermissions": ["camera", "geolocation", "microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
